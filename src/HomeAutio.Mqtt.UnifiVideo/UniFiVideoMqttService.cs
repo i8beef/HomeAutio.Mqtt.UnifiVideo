@@ -1,10 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Timers;
 using HomeAutio.Mqtt.Core;
+using HomeAutio.Mqtt.Core.Utilities;
 using I8Beef.UniFi.Video;
+using I8Beef.UniFi.Video.Protocol.Camera;
+using I8Beef.UniFi.Video.Protocol.Recording;
+using Newtonsoft.Json;
 using NLog;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
@@ -23,9 +27,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
 
         private Timer _refresh;
         private int _refreshInterval;
-        private DateTime _lastRun;
 
-        private IDictionary<string, dynamic> _cameraInfo = new Dictionary<string, dynamic>();
+        private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
         private IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
 
         /// <summary>
@@ -104,33 +107,29 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <param name="e">Event args.</param>
         private async void RefreshAsync(object sender, ElapsedEventArgs e)
         {
-            // Get current motion alerts
-            var now = DateTime.Now;
+            var now = e.SignalTime;
+
+            // Get all recordings in the last half hour
+            var recordingsTimespan = 60 * 30;
+            var recordings = await _client.RecordingAsync(now.AddSeconds(0 - recordingsTimespan), now, _cameraInfo.Keys, new List<RecordingEventType> { RecordingEventType.MotionRecording });
+
+            // Determine if there are any recordings still in progress
+            var inProgressRecordings = recordings.Where(x => x.InProgress == true);
+
+            // Publish and changes in camera state
             foreach (var cameraId in _cameraInfo.Keys)
             {
-                // Determine motion threshold from current camera settings
-                int motionThreshold = 50;
-                if (_cameraInfo[cameraId].zones.Count > 0)
-                    motionThreshold = _cameraInfo[cameraId].zones[0].sensitivity;
-
-                // Get motion alerts in the last waitForSeconds time span
-                dynamic motionAlerts = await _client.MotionAlertsAsync(cameraId, _lastRun, now);
-
-                // Determine if there are any motion alerts in the time span with a score over motionTheshold
                 var currentState = "close";
-                if (motionAlerts.data.Count > 0)
-                    if (((IEnumerable<dynamic>)motionAlerts.data[0].data).Any(x => x.score > motionThreshold))
-                        currentState = "open";
+                if (inProgressRecordings.Any(x => x.Cameras[0] == cameraId))
+                    currentState = "open";
 
                 // If this is a new state, publish
                 if (!_currentMotionStates.ContainsKey(cameraId) || _currentMotionStates[cameraId] != currentState)
                 {
-                    MqttClient.Publish($"{TopicRoot}/camera/{cameraId}/motion", Encoding.UTF8.GetBytes(currentState), MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
+                    MqttClient.Publish($"{TopicRoot}/camera/{_cameraInfo[cameraId].Name.Sluggify()}/motion", Encoding.UTF8.GetBytes(currentState), MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
                     _currentMotionStates[cameraId] = currentState;
                 }
             }
-
-            _lastRun = now;
         }
 
         /// <summary>
@@ -138,8 +137,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// </summary>
         private void GetInitialStatus()
         {
-            _lastRun = DateTime.Now;
-            _cameraInfo = _client.CamerasAsync().GetAwaiter().GetResult();
+            _cameraInfo = _client.CameraAsync().GetAwaiter().GetResult().ToDictionary(k => k.Id, v => v);
         }
 
         #endregion

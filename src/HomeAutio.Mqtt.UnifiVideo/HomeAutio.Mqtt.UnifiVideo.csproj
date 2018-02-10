@@ -35,8 +35,8 @@
     <Reference Include="HomeAutio.Mqtt.Core, Version=1.0.0.22, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\HomeAutio.Mqtt.Core.1.0.0.22\lib\net452\HomeAutio.Mqtt.Core.dll</HintPath>
     </Reference>
-    <Reference Include="I8Beef.UniFi.Video, Version=1.0.10.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\I8Beef.UniFi.Video.1.0.10\lib\netstandard2.0\I8Beef.UniFi.Video.dll</HintPath>
+    <Reference Include="I8Beef.UniFi.Video, Version=1.0.16.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\I8Beef.UniFi.Video.1.0.16\lib\netstandard2.0\I8Beef.UniFi.Video.dll</HintPath>
     </Reference>
     <Reference Include="M2Mqtt.Net, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\M2Mqtt.4.3.0.0\lib\net45\M2Mqtt.Net.dll</HintPath>
@@ -64,6 +64,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DateTimeExtensions.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UniFiVideoMqttService.cs" />

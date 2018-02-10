@@ -24,7 +24,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
             var brokerPassword = ConfigurationManager.AppSettings["brokerPassword"];
 
             var nvrName = ConfigurationManager.AppSettings["nvrName"];
-            var nvrRereshInterval = int.Parse(ConfigurationManager.AppSettings["nvrRereshInterval"]);
+            var nvrRereshInterval = int.Parse(ConfigurationManager.AppSettings["nvrRereshInterval"]) * 1000;
             var nvrHost = ConfigurationManager.AppSettings["nvrHost"];
             var nvrDisableSslCheck = bool.Parse(ConfigurationManager.AppSettings["nvrDisableSslCheck"]);
             var nvrUsername = ConfigurationManager.AppSettings["nvrUsername"];
