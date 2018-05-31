@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Timers;
 using HomeAutio.Mqtt.Core;
 using HomeAutio.Mqtt.Core.Utilities;
 using I8Beef.UniFi.Video;
 using I8Beef.UniFi.Video.Protocol.Camera;
 using I8Beef.UniFi.Video.Protocol.Recording;
-using Newtonsoft.Json;
-using NLog;
-using uPLibrary.Networking.M2Mqtt.Messages;
+using Microsoft.Extensions.Logging;
+using MQTTnet;
 
 namespace HomeAutio.Mqtt.UnifiVideo
 {
@@ -19,21 +19,22 @@ namespace HomeAutio.Mqtt.UnifiVideo
     /// </summary>
     public class UniFiVideoMqttService : ServiceBase
     {
-        private ILogger _log = LogManager.GetCurrentClassLogger();
+        private ILogger<UniFiVideoMqttService> _log;
         private bool _disposed = false;
 
         private Client _client;
         private string _nvrName;
 
-        private Timer _refresh;
+        private System.Timers.Timer _refresh;
         private int _refreshInterval;
 
         private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
         private IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EcobeeMqttService"/> class.
+        /// Initializes a new instance of the <see cref="UniFiVideoMqttService"/> class.
         /// </summary>
+        /// <param name="logger">Logging instance.</param>
         /// <param name="nvrClient">The UniFi Video client.</param>
         /// <param name="nvrName">The target NVR name.</param>
         /// <param name="refreshInterval">The refresh interval.</param>
@@ -41,10 +42,11 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <param name="brokerPort">MQTT broker port.</param>
         /// <param name="brokerUsername">MQTT broker username.</param>
         /// <param name="brokerPassword">MQTT broker password.</param>
-        public UniFiVideoMqttService(Client nvrClient, string nvrName, int refreshInterval, string brokerIp, int brokerPort = 1883, string brokerUsername = null, string brokerPassword = null)
-            : base(brokerIp, brokerPort, brokerUsername, brokerPassword, "unifi/video/" + nvrName)
+        public UniFiVideoMqttService(ILogger<UniFiVideoMqttService> logger, Client nvrClient, string nvrName, int refreshInterval, string brokerIp, int brokerPort = 1883, string brokerUsername = null, string brokerPassword = null)
+            : base(logger, brokerIp, brokerPort, brokerUsername, brokerPassword, "unifi/video/" + nvrName)
         {
-            _refreshInterval = refreshInterval;
+            _log = logger;
+            _refreshInterval = refreshInterval * 1000;
             SubscribedTopics.Add(TopicRoot + "/camera/+/+/set");
 
             _client = nvrClient;
@@ -53,12 +55,10 @@ namespace HomeAutio.Mqtt.UnifiVideo
 
         #region Service implementation
 
-        /// <summary>
-        /// Service Start action.
-        /// </summary>
-        protected override void StartService()
+        /// <inheritdoc />
+        protected override async Task StartServiceAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            GetInitialStatus();
+            await GetInitialStatusAsync(cancellationToken).ConfigureAwait(false);
 
             // Enable refresh
             if (_refresh != null)
@@ -66,18 +66,16 @@ namespace HomeAutio.Mqtt.UnifiVideo
                 _refresh.Dispose();
             }
 
-            _refresh = new Timer();
+            _refresh = new System.Timers.Timer();
             _refresh.Elapsed += RefreshAsync;
             _refresh.Interval = _refreshInterval;
             _refresh.Start();
         }
 
-        /// <summary>
-        /// Service Stop action.
-        /// </summary>
-        protected override void StopService()
+        /// <inheritdoc />
+        protected override Task StopServiceAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Dispose(true);
+            return Task.CompletedTask;
         }
 
         #endregion
@@ -85,14 +83,14 @@ namespace HomeAutio.Mqtt.UnifiVideo
         #region MQTT Implementation
 
         /// <summary>
-        /// Handles commands for the Ecobee published to MQTT.
+        /// Handles commands for the UniFi Video published to MQTT.
         /// </summary>
         /// <param name="sender">Event sender.</param>
         /// <param name="e">Event args.</param>
-        protected override void Mqtt_MqttMsgPublishReceived(object sender, MqttMsgPublishEventArgs e)
+        protected override async void Mqtt_MqttMsgPublishReceived(object sender, MqttApplicationMessageReceivedEventArgs e)
         {
-            var message = Encoding.UTF8.GetString(e.Message);
-            _log.Debug("MQTT message received for topic " + e.Topic + ": " + message);
+            var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+            _log.LogDebug("MQTT message received for topic " + e.ApplicationMessage.Topic + ": " + message);
         }
 
         #endregion
@@ -111,7 +109,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
 
             // Get all recordings in the last half hour
             var recordingsTimespan = 60 * 30;
-            var recordings = await _client.RecordingAsync(now.AddSeconds(0 - recordingsTimespan), now, _cameraInfo.Keys, new List<RecordingEventType> { RecordingEventType.MotionRecording });
+            var recordings = await _client.RecordingAsync(now.AddSeconds(0 - recordingsTimespan), now, _cameraInfo.Keys, new List<RecordingEventType> { RecordingEventType.MotionRecording })
+                .ConfigureAwait(false);
 
             // Determine if there are any recordings still in progress
             var inProgressRecordings = recordings.Where(x => x.InProgress == true);
@@ -126,7 +125,12 @@ namespace HomeAutio.Mqtt.UnifiVideo
                 // If this is a new state, publish
                 if (!_currentMotionStates.ContainsKey(cameraId) || _currentMotionStates[cameraId] != currentState)
                 {
-                    MqttClient.Publish($"{TopicRoot}/camera/{_cameraInfo[cameraId].Name.Sluggify()}/motion", Encoding.UTF8.GetBytes(currentState), MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE, true);
+                    await MqttClient.PublishAsync(new MqttApplicationMessageBuilder()
+                        .WithTopic($"{TopicRoot}/camera/{_cameraInfo[cameraId].Name.Sluggify()}/motion")
+                        .WithPayload(currentState)
+                        .WithAtLeastOnceQoS()
+                        .Build()).ConfigureAwait(false);
+
                     _currentMotionStates[cameraId] = currentState;
                 }
             }
@@ -135,9 +139,11 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <summary>
         /// Get, cache, and publish initial states.
         /// </summary>
-        private void GetInitialStatus()
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>An awaitable <see cref="Task"/>.</returns>
+        private async Task GetInitialStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            _cameraInfo = _client.CameraAsync().GetAwaiter().GetResult().ToDictionary(k => k.Id, v => v);
+            _cameraInfo = (await _client.CameraAsync(null, cancellationToken).ConfigureAwait(false)).ToDictionary(k => k.Id, v => v);
         }
 
         #endregion
