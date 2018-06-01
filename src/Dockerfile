@@ -11,7 +11,7 @@ RUN dotnet restore
 COPY HomeAutio.Mqtt.UnifiVideo/. ./HomeAutio.Mqtt.UnifiVideo/
 RUN dotnet build -c Release
 
-# copy everything else and build
+# publish
 FROM build AS publish
 WORKDIR /app/HomeAutio.Mqtt.UnifiVideo
 RUN dotnet publish -o out
