@@ -129,6 +129,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
                         .WithTopic($"{TopicRoot}/camera/{_cameraInfo[cameraId].Name.Sluggify()}/motion")
                         .WithPayload(currentState)
                         .WithAtLeastOnceQoS()
+                        .WithRetainFlag()
                         .Build()).ConfigureAwait(false);
 
                     _currentMotionStates[cameraId] = currentState;
