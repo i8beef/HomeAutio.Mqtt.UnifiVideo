@@ -65,6 +65,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
                     {
                         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
                         return new UniFiVideoMqttService(
+                            serviceProvider.GetRequiredService<IApplicationLifetime>(),
                             serviceProvider.GetRequiredService<ILogger<UniFiVideoMqttService>>(),
                             serviceProvider.GetRequiredService<Client>(),
                             configuration.GetValue<string>("unifiName"),

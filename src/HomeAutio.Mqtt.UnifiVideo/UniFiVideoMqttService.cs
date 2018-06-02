@@ -9,6 +9,7 @@ using HomeAutio.Mqtt.Core.Utilities;
 using I8Beef.UniFi.Video;
 using I8Beef.UniFi.Video.Protocol.Camera;
 using I8Beef.UniFi.Video.Protocol.Recording;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
 
@@ -34,6 +35,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <summary>
         /// Initializes a new instance of the <see cref="UniFiVideoMqttService"/> class.
         /// </summary>
+        /// <param name="applicationLifetime">Application lifetime instance.</param>
         /// <param name="logger">Logging instance.</param>
         /// <param name="nvrClient">The UniFi Video client.</param>
         /// <param name="nvrName">The target NVR name.</param>
@@ -42,8 +44,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <param name="brokerPort">MQTT broker port.</param>
         /// <param name="brokerUsername">MQTT broker username.</param>
         /// <param name="brokerPassword">MQTT broker password.</param>
-        public UniFiVideoMqttService(ILogger<UniFiVideoMqttService> logger, Client nvrClient, string nvrName, int refreshInterval, string brokerIp, int brokerPort = 1883, string brokerUsername = null, string brokerPassword = null)
-            : base(logger, brokerIp, brokerPort, brokerUsername, brokerPassword, "unifi/video/" + nvrName)
+        public UniFiVideoMqttService(IApplicationLifetime applicationLifetime, ILogger<UniFiVideoMqttService> logger, Client nvrClient, string nvrName, int refreshInterval, string brokerIp, int brokerPort = 1883, string brokerUsername = null, string brokerPassword = null)
+            : base(applicationLifetime, logger, brokerIp, brokerPort, brokerUsername, brokerPassword, "unifi/video/" + nvrName)
         {
             _log = logger;
             _refreshInterval = refreshInterval * 1000;
