@@ -19,17 +19,17 @@ namespace HomeAutio.Mqtt.UnifiVideo
     /// </summary>
     public class UniFiVideoMqttService : ServiceBase
     {
-        private ILogger<UniFiVideoMqttService> _log;
+        private readonly ILogger<UniFiVideoMqttService> _log;
+
+        private readonly Client _client;
+        private readonly string _nvrName;
+
+        private readonly IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
+        private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
+
         private bool _disposed = false;
-
-        private Client _client;
-        private string _nvrName;
-
         private System.Timers.Timer _refresh;
         private int _refreshInterval;
-
-        private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
-        private IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UniFiVideoMqttService"/> class.
