@@ -44,7 +44,16 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <param name="brokerPort">MQTT broker port.</param>
         /// <param name="brokerUsername">MQTT broker username.</param>
         /// <param name="brokerPassword">MQTT broker password.</param>
-        public UniFiVideoMqttService(IApplicationLifetime applicationLifetime, ILogger<UniFiVideoMqttService> logger, Client nvrClient, string nvrName, int refreshInterval, string brokerIp, int brokerPort = 1883, string brokerUsername = null, string brokerPassword = null)
+        public UniFiVideoMqttService(
+            IApplicationLifetime applicationLifetime,
+            ILogger<UniFiVideoMqttService> logger,
+            Client nvrClient,
+            string nvrName,
+            int refreshInterval,
+            string brokerIp,
+            int brokerPort = 1883,
+            string brokerUsername = null,
+            string brokerPassword = null)
             : base(applicationLifetime, logger, brokerIp, brokerPort, brokerUsername, brokerPassword, "unifi/video/" + nvrName)
         {
             _log = logger;
@@ -60,7 +69,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <inheritdoc />
         protected override async Task StartServiceAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await GetInitialStatusAsync(cancellationToken).ConfigureAwait(false);
+            await GetInitialStatusAsync(cancellationToken)
+                .ConfigureAwait(false);
 
             // Enable refresh
             if (_refresh != null)
@@ -132,7 +142,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
                         .WithPayload(currentState)
                         .WithAtLeastOnceQoS()
                         .WithRetainFlag()
-                        .Build()).ConfigureAwait(false);
+                        .Build())
+                        .ConfigureAwait(false);
 
                     _currentMotionStates[cameraId] = currentState;
                 }
