@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "HomeAutio.Mqtt.UnifiVideo": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

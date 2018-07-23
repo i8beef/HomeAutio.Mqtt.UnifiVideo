@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <PackageId>HomeAutio.Mqtt.UnifiVideo</PackageId>
     <Version>1.0.0.0</Version>
     <Authors>Michael Hallock</Authors>
@@ -15,19 +15,25 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netcoreapp2.0\HomeAutio.Mqtt.UnifiVideo.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netcoreapp2.1\HomeAutio.Mqtt.UnifiVideo.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netcoreapp2.0\HomeAutio.Mqtt.UnifiVideo.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netcoreapp2.1\HomeAutio.Mqtt.UnifiVideo.xml</DocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings*.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="I8Beef.CodeAnalysis.RuleSet" Version="1.0.15">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="HomeAutio.Mqtt.Core" Version="2.0.0.33" />
-    <PackageReference Include="I8Beef.UniFi.Video" Version="1.0.16" />
+    <PackageReference Include="HomeAutio.Mqtt.Core" Version="3.0.0.39" />
+    <PackageReference Include="I8Beef.UniFi.Video" Version="1.1.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.1.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="2.0.2" />

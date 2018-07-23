@@ -30,10 +30,15 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <returns>Awaitable <see cref="Task" />.</returns>
         public static async Task MainAsync(string[] args)
         {
+            var environmentName = Environment.GetEnvironmentVariable("ENVIRONMENT");
+            if (string.IsNullOrEmpty(environmentName))
+                environmentName = "Development";
+
             // Setup config
             var config = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
                 .Build();
 
             // Setup logging
@@ -50,6 +55,10 @@ namespace HomeAutio.Mqtt.UnifiVideo
             {
                 Log.Logger.Fatal(ex, ex.Message);
                 throw;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
             }
         }
 
@@ -68,28 +77,30 @@ namespace HomeAutio.Mqtt.UnifiVideo
                     // Setup client
                     services.AddScoped<Client>(serviceProvider =>
                     {
-                        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
                         return new Client(
-                            configuration.GetValue<string>("unifiHost"),
-                            configuration.GetValue<string>("unifiUsername"),
-                            configuration.GetValue<string>("unifiPassword"),
-                            configuration.GetValue<bool>("unifiDisableSslCheck"));
+                            config.GetValue<string>("unifi:unifiHost"),
+                            config.GetValue<string>("unifi:unifiUsername"),
+                            config.GetValue<string>("unifi:unifiPassword"),
+                            config.GetValue<bool>("unifi:unifiDisableSslCheck"));
                     });
 
                     // Setup service instance
                     services.AddScoped<IHostedService, UniFiVideoMqttService>(serviceProvider =>
                     {
-                        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+                        var brokerSettings = new Core.BrokerSettings
+                        {
+                            BrokerIp = config.GetValue<string>("mqtt:brokerIp"),
+                            BrokerPort = config.GetValue<int>("mqtt:brokerPort"),
+                            BrokerUsername = config.GetValue<string>("mqtt:brokerUsername"),
+                            BrokerPassword = config.GetValue<string>("mqtt:brokerPassword")
+                        };
+
                         return new UniFiVideoMqttService(
-                            serviceProvider.GetRequiredService<IApplicationLifetime>(),
                             serviceProvider.GetRequiredService<ILogger<UniFiVideoMqttService>>(),
                             serviceProvider.GetRequiredService<Client>(),
-                            configuration.GetValue<string>("unifiName"),
-                            configuration.GetValue<int>("refreshInterval"),
-                            configuration.GetValue<string>("brokerIp"),
-                            configuration.GetValue<int>("brokerPort"),
-                            configuration.GetValue<string>("brokerUsername"),
-                            configuration.GetValue<string>("brokerPassword"));
+                            config.GetValue<string>("unifi:unifiName"),
+                            config.GetValue<int>("unifi:refreshInterval"),
+                            brokerSettings);
                     });
                 });
         }
