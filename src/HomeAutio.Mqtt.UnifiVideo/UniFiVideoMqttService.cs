@@ -21,7 +21,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
     {
         private readonly ILogger<UniFiVideoMqttService> _log;
 
-        private readonly Client _client;
+        private readonly IClient _client;
         private readonly string _nvrName;
 
         private readonly IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
@@ -41,7 +41,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <param name="brokerSettings">MQTT broker settings.</param>
         public UniFiVideoMqttService(
             ILogger<UniFiVideoMqttService> logger,
-            Client nvrClient,
+            IClient nvrClient,
             string nvrName,
             int refreshInterval,
             BrokerSettings brokerSettings)

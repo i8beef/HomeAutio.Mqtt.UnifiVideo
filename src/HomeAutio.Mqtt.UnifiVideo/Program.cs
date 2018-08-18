@@ -75,7 +75,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
                 .ConfigureServices((hostContext, services) =>
                 {
                     // Setup client
-                    services.AddScoped<Client>(serviceProvider =>
+                    services.AddScoped<IClient>(serviceProvider =>
                     {
                         return new Client(
                             config.GetValue<string>("unifi:unifiHost"),
@@ -97,7 +97,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
 
                         return new UniFiVideoMqttService(
                             serviceProvider.GetRequiredService<ILogger<UniFiVideoMqttService>>(),
-                            serviceProvider.GetRequiredService<Client>(),
+                            serviceProvider.GetRequiredService<IClient>(),
                             config.GetValue<string>("unifi:unifiName"),
                             config.GetValue<int>("unifi:refreshInterval"),
                             brokerSettings);
