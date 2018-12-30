@@ -90,7 +90,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// </summary>
         /// <param name="sender">Event sender.</param>
         /// <param name="e">Event args.</param>
-        protected override async void Mqtt_MqttMsgPublishReceived(object sender, MqttApplicationMessageReceivedEventArgs e)
+        protected override void Mqtt_MqttMsgPublishReceived(object sender, MqttApplicationMessageReceivedEventArgs e)
         {
             var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
             _log.LogInformation("MQTT message received for topic " + e.ApplicationMessage.Topic + ": " + message);
