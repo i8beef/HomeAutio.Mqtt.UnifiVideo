@@ -11,6 +11,7 @@ using I8Beef.UniFi.Video.Protocol.Common;
 using I8Beef.UniFi.Video.Protocol.Recording;
 using Microsoft.Extensions.Logging;
 using MQTTnet;
+using MQTTnet.Extensions.ManagedClient;
 
 namespace HomeAutio.Mqtt.UnifiVideo
 {
@@ -22,16 +23,16 @@ namespace HomeAutio.Mqtt.UnifiVideo
         private readonly ILogger<UniFiVideoMqttService> _log;
 
         private readonly IClient _client;
-        private readonly string _nvrName;
+        private readonly int _refreshInterval;
+        private readonly int _detectMotionRefreshInterval;
 
         private readonly IDictionary<string, string> _currentMotionStates = new Dictionary<string, string>();
-        private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
 
         private bool _disposed = false;
         private System.Timers.Timer _refresh;
         private System.Timers.Timer _detectMotionRefresh;
-        private int _refreshInterval;
-        private int _detectMotionRefreshInterval;
+
+        private IDictionary<string, Camera> _cameraInfo = new Dictionary<string, Camera>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UniFiVideoMqttService"/> class.
@@ -57,13 +58,12 @@ namespace HomeAutio.Mqtt.UnifiVideo
             SubscribedTopics.Add(TopicRoot + "/camera/+/+/set");
 
             _client = nvrClient;
-            _nvrName = nvrName;
         }
 
         #region Service implementation
 
         /// <inheritdoc />
-        protected override async Task StartServiceAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override async Task StartServiceAsync(CancellationToken cancellationToken = default)
         {
             await GetInitialStatusAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -92,7 +92,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         }
 
         /// <inheritdoc />
-        protected override Task StopServiceAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override Task StopServiceAsync(CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
@@ -104,9 +104,8 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <summary>
         /// Handles commands for the UniFi Video published to MQTT.
         /// </summary>
-        /// <param name="sender">Event sender.</param>
         /// <param name="e">Event args.</param>
-        protected override async void Mqtt_MqttMsgPublishReceived(object sender, MqttApplicationMessageReceivedEventArgs e)
+        protected override async void Mqtt_MqttMsgPublishReceived(MqttApplicationMessageReceivedEventArgs e)
         {
             var message = e.ApplicationMessage.ConvertPayloadToString();
             _log.LogInformation("MQTT message received for topic " + e.ApplicationMessage.Topic + ": " + message);
@@ -137,7 +136,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// <returns>An awaitable <see cref="Task"/>.</returns>
         private async Task HandleRecordModeCommandAsync(string cameraId, string value)
         {
-            var recordMode = RecordingMode.None;
+            RecordingMode recordMode;
             switch (value)
             {
                 case "always":
@@ -245,7 +244,7 @@ namespace HomeAutio.Mqtt.UnifiVideo
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>An awaitable <see cref="Task"/>.</returns>
-        private async Task GetInitialStatusAsync(CancellationToken cancellationToken = default(CancellationToken))
+        private async Task GetInitialStatusAsync(CancellationToken cancellationToken = default)
         {
             _cameraInfo = (await _client.CameraAsync(null, cancellationToken).ConfigureAwait(false)).ToDictionary(k => k.Id, v => v);
         }
