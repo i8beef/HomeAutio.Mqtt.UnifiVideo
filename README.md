@@ -1,4 +1,5 @@
-[![Build status](https://ci.appveyor.com/api/projects/status/vm7087hh08ww4fud/branch/master?svg=true)](https://ci.appveyor.com/project/i8beef/homeautio-mqtt-unifivideo/branch/master)
+![Build](https://github.com/i8beef/HomeAutio.Mqtt.UnifiVideo/actions/workflows/build.yml/badge.svg?branch=master)
+![Release](https://github.com/i8beef/HomeAutio.Mqtt.UnifiVideo/actions/workflows/release.yml/badge.svg)
 
 # HomeAutio.Mqtt.UnifiVideo
 HomeAutio UniFi Video MQTT Bridge
